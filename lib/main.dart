@@ -432,7 +432,7 @@ class _MainScreenState extends State<MainScreen> {
                   players: game.players,
                   currentPlayerIndex: game.currentPlayerIndex,
                   turn: game.turn,
-                  lpHistory: game.lpHistory,
+                  initialLp: game.initialLp,
                   memos: game.memos,
                   onTurnChanged: (t) {
                     game.turn = t;

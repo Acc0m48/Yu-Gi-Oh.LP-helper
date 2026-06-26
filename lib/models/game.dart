@@ -36,6 +36,23 @@ class Game {
         memos = memos ?? [],
         lpHistory = lpHistory ?? [];
 
+  void recalculateLp() {
+    recalculateLpStatic(players, memos, initialLp);
+  }
+
+  static void recalculateLpStatic(List<Player> players, List<TurnRecord> memos, int initialLp) {
+    for (final p in players) {
+      p.lp = initialLp;
+    }
+    final sorted = List<TurnRecord>.from(memos)
+      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    for (final m in sorted) {
+      if (m.isLpChange) {
+        players[m.playerIndex!].lp = m.lpAfter ?? players[m.playerIndex!].lp;
+      }
+    }
+  }
+
   factory Game.fromJson(Map<String, dynamic> json) {
     return Game(
       id: json['id'] as String,
