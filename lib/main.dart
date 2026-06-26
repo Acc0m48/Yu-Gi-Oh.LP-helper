@@ -10,8 +10,24 @@ void main() {
   runApp(const LpApp());
 }
 
-class LpApp extends StatelessWidget {
+class LpApp extends StatefulWidget {
   const LpApp({super.key});
+
+  @override
+  State<LpApp> createState() => _LpAppState();
+
+  static _LpAppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_LpAppState>();
+}
+
+class _LpAppState extends State<LpApp> {
+  ThemeMode _themeMode = ThemeMode.system;
+
+  void toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +39,12 @@ class LpApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.light,
       ),
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.indigo,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
+      themeMode: _themeMode,
       home: const MainScreen(),
     );
   }
@@ -497,6 +519,13 @@ class _MainScreenState extends State<MainScreen> {
               leading: const Icon(Icons.file_download_outlined),
               title: const Text('导入数据'),
               onTap: () { Navigator.pop(context); _importData(); },
+            ),
+            const Divider(),
+            SwitchListTile(
+              secondary: const Icon(Icons.dark_mode),
+              title: const Text('深色主题', style: TextStyle(fontSize: 14)),
+              value: Theme.of(context).brightness == Brightness.dark,
+              onChanged: (_) => LpApp.of(context)?.toggleTheme(),
             ),
             const Divider(),
             Padding(

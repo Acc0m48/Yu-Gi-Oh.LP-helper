@@ -53,6 +53,9 @@ Desktop.ini
 *.aab
 *.ipa
 
+# === Dev docs ===
+DEVELOPMENT.md
+
 # === Misc ===
 *.log
 *.pyc

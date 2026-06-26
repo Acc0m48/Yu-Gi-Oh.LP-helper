@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/player.dart';
 import '../models/lp_history.dart';
@@ -57,7 +58,19 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   int _selectedPlayerIndex = 0;
   String _selectedPhase = _phases[0];
+  String? _selectedTag;
   final TextEditingController _memoCtrl = TextEditingController();
+
+  List<String> get _presetTags => [
+    widget.players[0].name,
+    widget.players[1].name,
+    '自肃',
+    '效果',
+    '召唤',
+    '攻击',
+    '连锁',
+    '伤害',
+  ];
 
   void _applyLpChange(int amount, bool isAdd) {
     setState(() {
@@ -95,16 +108,51 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _addMemo() {
-    final note = _memoCtrl.text.trim();
-    if (note.isEmpty) return;
+    final tag = _selectedTag ?? '';
+    final raw = _memoCtrl.text.trim();
+    String note = raw;
+    if (tag.isNotEmpty && raw.isNotEmpty) {
+      note = '[$tag] $raw';
+    }
+    if (raw.isEmpty) return;
     widget.memos.insert(0, TurnRecord(
       turnNumber: widget.turn,
       phase: _selectedPhase,
       note: note,
     ));
     _memoCtrl.clear();
+    setState(() => _selectedTag = null);
     widget.onDataChanged();
     setState(() {});
+  }
+
+  void _editMemo(TurnRecord record) {
+    final ctrl = TextEditingController(text: record.note);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('编辑记录'),
+        content: TextField(
+          controller: ctrl,
+          decoration: const InputDecoration(
+            hintText: '修改记录内容...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+          FilledButton(
+            onPressed: () {
+              record.note = ctrl.text.trim();
+              widget.onDataChanged();
+              Navigator.pop(ctx);
+              setState(() {});
+            },
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _openLpSheet(int playerIndex) {
@@ -129,36 +177,16 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _rollDice() {
-    final r = (DateTime.now().microsecondsSinceEpoch % 6) + 1;
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('🎲 骰子', textAlign: TextAlign.center),
-        content: SizedBox(
-          height: 80,
-          child: Center(
-            child: Text('$r', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
-          ),
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('确定'))],
-      ),
+      builder: (_) => _AnimatedDiceDialog(),
     );
   }
 
   void _flipCoin() {
-    final r = DateTime.now().microsecondsSinceEpoch % 2 == 0 ? '正面' : '反面';
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('🪙 硬币', textAlign: TextAlign.center),
-        content: SizedBox(
-          height: 80,
-          child: Center(
-            child: Text(r, style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold)),
-          ),
-        ),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('确定'))],
-      ),
+      builder: (_) => _AnimatedCoinDialog(),
     );
   }
 
@@ -220,13 +248,14 @@ class _GameScreenState extends State<GameScreen> {
           ),
         const Divider(height: 1),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
           child: Wrap(
-            spacing: 6,
+            spacing: 4,
+            runSpacing: 2,
             children: _phases.map((p) => ChoiceChip(
               label: Text(p, style: const TextStyle(fontSize: 11)),
               selected: _selectedPhase == p,
-              selectedColor: Colors.indigo.shade100,
+              selectedColor: Theme.of(context).colorScheme.primaryContainer,
               visualDensity: VisualDensity.compact,
               onSelected: (_) => setState(() => _selectedPhase = p),
             )).toList(),
@@ -234,12 +263,25 @@ class _GameScreenState extends State<GameScreen> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          child: Wrap(
+            spacing: 4,
+            runSpacing: 2,
+            children: _presetTags.map((tag) => InputChip(
+              label: Text(tag, style: const TextStyle(fontSize: 11)),
+              selected: _selectedTag == tag,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => setState(() => _selectedTag = _selectedTag == tag ? null : tag),
+              onSelected: (_) => setState(() => _selectedTag = _selectedTag == tag ? null : tag),
+            )).toList(),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _toolBtn(Icons.casino, '骰子', Colors.purple, _rollDice),
-              const SizedBox(width: 12),
-              _toolBtn(Icons.token, '硬币', Colors.amber.shade700, _flipCoin),
+              _toolBtn(Icons.casino, '骰子', Theme.of(context).colorScheme.tertiary, _rollDice),
+              const SizedBox(width: 8),
+              _toolBtn(Icons.token, '硬币', Theme.of(context).colorScheme.secondary, _flipCoin),
             ],
           ),
         ),
@@ -247,6 +289,10 @@ class _GameScreenState extends State<GameScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
+              if (_selectedTag != null) ...[
+                Chip(label: Text(_selectedTag!, style: const TextStyle(fontSize: 11)), visualDensity: VisualDensity.compact),
+                const SizedBox(width: 4),
+              ],
               Expanded(
                 child: TextField(
                   controller: _memoCtrl,
@@ -262,7 +308,7 @@ class _GameScreenState extends State<GameScreen> {
               const SizedBox(width: 6),
               IconButton(
                 icon: const Icon(Icons.send, size: 22),
-                color: Colors.blue,
+                color: Theme.of(context).colorScheme.primary,
                 onPressed: _addMemo,
               ),
             ],
@@ -280,7 +326,7 @@ class _GameScreenState extends State<GameScreen> {
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 4),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(
-        color: Colors.indigo.shade50,
+        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -293,12 +339,12 @@ class _GameScreenState extends State<GameScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.indigo,
+                  color: Theme.of(context).colorScheme.primary,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   cp.name,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimary),
                 ),
               ),
               const SizedBox(height: 4),
@@ -313,12 +359,9 @@ class _GameScreenState extends State<GameScreen> {
           const SizedBox(width: 20),
           Column(
             children: [
-              Text('▶ $otherName', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              Text('▶ $otherName', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
               const SizedBox(height: 4),
-              Text(
-                '等待中',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade400),
-              ),
+              Text('等待中', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3))),
             ],
           ),
           const SizedBox(width: 8),
@@ -340,7 +383,7 @@ class _GameScreenState extends State<GameScreen> {
         label: Text(label, style: const TextStyle(fontSize: 12)),
         style: ElevatedButton.styleFrom(
           backgroundColor: color,
-          foregroundColor: Colors.white,
+          foregroundColor: color.computeLuminance() > 0.5 ? Colors.black : Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 10),
         ),
       ),
@@ -374,15 +417,16 @@ class _GameScreenState extends State<GameScreen> {
   Widget _playerCard(int index) {
     final player = widget.players[index];
     final isCurrent = index == widget.currentPlayerIndex;
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => _openLpSheet(index),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
         decoration: BoxDecoration(
-          color: isCurrent ? Colors.indigo.shade50 : Colors.grey.shade100,
+          color: isCurrent ? cs.primaryContainer : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isCurrent ? Colors.indigo : Colors.grey.shade300,
+            color: isCurrent ? cs.primary : cs.outline,
             width: isCurrent ? 2 : 1,
           ),
         ),
@@ -396,7 +440,7 @@ class _GameScreenState extends State<GameScreen> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                    color: isCurrent ? Colors.indigo : Colors.grey.shade700,
+                    color: isCurrent ? cs.primary : cs.onSurface,
                   ),
                 ),
                 if (isCurrent) ...[
@@ -404,10 +448,10 @@ class _GameScreenState extends State<GameScreen> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
-                      color: Colors.indigo,
+                      color: cs.primary,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text('当前', style: TextStyle(fontSize: 10, color: Colors.white)),
+                    child: Text('当前', style: TextStyle(fontSize: 10, color: cs.onPrimary)),
                   ),
                 ],
               ],
@@ -421,7 +465,7 @@ class _GameScreenState extends State<GameScreen> {
                 color: player.lp > 0 ? Colors.green : Colors.red,
               ),
             ),
-            Text('LP', style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+            Text('LP', style: TextStyle(fontSize: 11, color: cs.onSurface.withOpacity(0.3))),
           ],
         ),
       ),
@@ -444,7 +488,7 @@ class _GameScreenState extends State<GameScreen> {
           final sign = item.delta! >= 0 ? '+' : '';
           return Card(
             margin: const EdgeInsets.only(bottom: 4),
-            color: item.delta! >= 0 ? Colors.green.shade50 : Colors.red.shade50,
+            color: item.delta! >= 0 ? Colors.green.withOpacity(0.08) : Colors.red.withOpacity(0.08),
             child: ListTile(
               dense: true,
               visualDensity: VisualDensity.compact,
@@ -453,49 +497,203 @@ class _GameScreenState extends State<GameScreen> {
                 backgroundColor: item.delta! >= 0 ? Colors.green : Colors.red,
                 child: Text('$sign${item.delta}', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold)),
               ),
-              title: Text(
-                p.name,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-              subtitle: Text(
-                '${item.prevLp} → ${item.newLp}  $time',
-                style: const TextStyle(fontSize: 11),
-              ),
-            ),
-          );
-        } else {
-          return Card(
-            margin: const EdgeInsets.only(bottom: 4),
-            child: ListTile(
-              dense: true,
-              visualDensity: VisualDensity.compact,
-              leading: CircleAvatar(
-                radius: 14,
-                backgroundColor: Colors.indigo.shade100,
-                child: Text('${item.turnNumber}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-              ),
-              title: Text(item.note!, style: const TextStyle(fontSize: 13)),
-              subtitle: Text(
-                item.phase!.isNotEmpty ? '回合${item.turnNumber} · ${item.phase} · $time' : '回合${item.turnNumber} · $time',
-                style: const TextStyle(fontSize: 11),
-              ),
-              trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, size: 16),
-                onPressed: () {
-                  widget.memos.removeWhere((m) =>
-                      m.timestamp == item.timestamp && m.note == item.note);
-                  widget.onDataChanged();
-                  setState(() {});
-                },
-              ),
+              title: Text(p.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              subtitle: Text('${item.prevLp} → ${item.newLp}  $time', style: const TextStyle(fontSize: 11)),
             ),
           );
         }
+        // Memo item
+        final memo = widget.memos.firstWhere(
+          (m) => m.timestamp == item.timestamp && m.note == item.note,
+          orElse: () => TurnRecord(turnNumber: 0, note: ''),
+        );
+        if (memo.turnNumber == 0) return const SizedBox.shrink();
+        return Card(
+          margin: const EdgeInsets.only(bottom: 4),
+          child: ListTile(
+            dense: true,
+            visualDensity: VisualDensity.compact,
+            leading: CircleAvatar(
+              radius: 14,
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Text('${item.turnNumber}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+            ),
+            title: Text(item.note!, style: const TextStyle(fontSize: 13)),
+            subtitle: Text(
+              item.phase!.isNotEmpty ? '回合${item.turnNumber} · ${item.phase} · $time' : '回合${item.turnNumber} · $time',
+              style: const TextStyle(fontSize: 11),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  onPressed: () => _editMemo(memo),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, size: 16),
+                  onPressed: () {
+                    widget.memos.removeWhere((m) => m.timestamp == item.timestamp && m.note == item.note);
+                    widget.onDataChanged();
+                    setState(() {});
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
 }
 
+// === Animated Dice Dialog ===
+class _AnimatedDiceDialog extends StatefulWidget {
+  @override
+  State<_AnimatedDiceDialog> createState() => _AnimatedDiceDialogState();
+}
+
+class _AnimatedDiceDialogState extends State<_AnimatedDiceDialog> with TickerProviderStateMixin {
+  late AnimationController _ctrl;
+  int? _result;
+  bool _rolling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2500));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _roll() {
+    setState(() => _rolling = true);
+    _ctrl.forward(from: 0).then((_) {
+      setState(() {
+        _result = (DateTime.now().microsecondsSinceEpoch % 6) + 1;
+        _rolling = false;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('骰子', textAlign: TextAlign.center),
+      content: SizedBox(
+        height: 100,
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, child) => Transform.scale(
+              scale: _rolling ? 1.0 + 0.2 * (_ctrl.value < 0.5 ? _ctrl.value * 2 : 2 - _ctrl.value * 2) : 1.0,
+              child: Text(
+                _rolling ? '${(DateTime.now().microsecondsSinceEpoch % 6) + 1}' : '${_result ?? '?'}',
+                style: TextStyle(
+                  fontSize: _result != null ? 56 : 48,
+                  fontWeight: FontWeight.bold,
+                  color: _result != null ? Theme.of(context).colorScheme.primary : Colors.grey,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: _rolling ? null : _roll, child: const Text('投掷')),
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+      ],
+    );
+  }
+}
+
+// === Animated Coin Dialog ===
+class _AnimatedCoinDialog extends StatefulWidget {
+  @override
+  State<_AnimatedCoinDialog> createState() => _AnimatedCoinDialogState();
+}
+
+class _AnimatedCoinDialogState extends State<_AnimatedCoinDialog> with TickerProviderStateMixin {
+  late AnimationController _ctrl;
+  String? _result;
+  bool _flipping = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 3000));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _flip() {
+    setState(() => _flipping = true);
+    _ctrl.forward(from: 0).then((_) {
+      setState(() {
+        _result = DateTime.now().microsecondsSinceEpoch % 2 == 0 ? '正面' : '反面';
+        _flipping = false;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('硬币', textAlign: TextAlign.center),
+      content: SizedBox(
+        height: 120,
+        child: Center(
+          child: AnimatedBuilder(
+            animation: _ctrl,
+            builder: (_, child) {
+              final angle = _flipping ? _ctrl.value * 4 * pi : 0.0;
+              return Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.identity()
+                  ..setEntry(3, 2, 0.001)
+                  ..rotateX(angle),
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _result != null
+                        ? (_result == '正面' ? Colors.amber.shade300 : Colors.grey.shade400)
+                        : Colors.amber.shade200,
+                    border: Border.all(color: Colors.amber.shade700, width: 3),
+                  ),
+                  child: Center(
+                    child: _result != null
+                        ? Icon(
+                            _result == '正面' ? Icons.star : Icons.circle_outlined,
+                            size: 36,
+                            color: Colors.white,
+                          )
+                        : const Icon(Icons.token, size: 36, color: Colors.white),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: _flipping ? null : _flip, child: const Text('抛硬币')),
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('关闭')),
+      ],
+    );
+  }
+}
+
+// === LP Bottom Sheet Dialog ===
 class _LpDialog extends StatefulWidget {
   final List<Player> players;
   final int playerIndex;
@@ -548,51 +746,9 @@ class _LpDialogState extends State<_LpDialog> {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => widget.onSelectPlayer(0),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: widget.playerIndex == 0 ? Colors.indigo.shade50 : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: widget.playerIndex == 0 ? Colors.indigo : Colors.grey.shade300,
-                            width: widget.playerIndex == 0 ? 2 : 1,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(widget.players[0].name, style: const TextStyle(fontSize: 13)),
-                            Text('${widget.players[0].lp}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: widget.players[0].lp > 0 ? Colors.green : Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  Expanded(child: _playerChip(0)),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => widget.onSelectPlayer(1),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        decoration: BoxDecoration(
-                          color: widget.playerIndex == 1 ? Colors.indigo.shade50 : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: widget.playerIndex == 1 ? Colors.indigo : Colors.grey.shade300,
-                            width: widget.playerIndex == 1 ? 2 : 1,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Text(widget.players[1].name, style: const TextStyle(fontSize: 13)),
-                            Text('${widget.players[1].lp}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: widget.players[1].lp > 0 ? Colors.green : Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                  Expanded(child: _playerChip(1)),
                 ],
               ),
             ),
@@ -600,7 +756,7 @@ class _LpDialogState extends State<_LpDialog> {
               margin: const EdgeInsets.symmetric(horizontal: 24),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -627,6 +783,29 @@ class _LpDialogState extends State<_LpDialog> {
               onDelete: () { if (_buffer.isNotEmpty) setState(() => _buffer = _buffer.substring(0, _buffer.length - 1)); },
               onClear: () => setState(() => _buffer = ''),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _playerChip(int index) {
+    final p = widget.players[index];
+    final sel = index == widget.playerIndex;
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: () => widget.onSelectPlayer(index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: sel ? cs.primaryContainer : cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: sel ? cs.primary : cs.outline, width: sel ? 2 : 1),
+        ),
+        child: Column(
+          children: [
+            Text(p.name, style: const TextStyle(fontSize: 13)),
+            Text('${p.lp}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: p.lp > 0 ? Colors.green : Colors.red)),
           ],
         ),
       ),
