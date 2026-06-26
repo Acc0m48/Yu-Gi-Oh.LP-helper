@@ -270,7 +270,6 @@ class _GameScreenState extends State<GameScreen> {
               label: Text(tag, style: const TextStyle(fontSize: 11)),
               selected: _selectedTag == tag,
               visualDensity: VisualDensity.compact,
-              onPressed: () => setState(() => _selectedTag = _selectedTag == tag ? null : tag),
               onSelected: (_) => setState(() => _selectedTag = _selectedTag == tag ? null : tag),
             )).toList(),
           ),
@@ -737,8 +736,8 @@ class _LpDialogState extends State<_LpDialog> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
