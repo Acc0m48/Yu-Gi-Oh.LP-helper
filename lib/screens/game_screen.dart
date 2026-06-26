@@ -297,12 +297,20 @@ class _GameScreenState extends State<GameScreen> {
               onSelected: (v) {
                 if (v) {
                   if (tag == '区域位置') {
-                    _openFieldDialog();
+                    if (_selectedTags.contains(tag)) {
+                      _openFieldDialog();
+                    } else {
+                      _openFieldDialog();
+                    }
                     return;
                   }
                   setState(() => _selectedTags.add(tag));
                 } else {
-                  setState(() => _selectedTags.remove(tag));
+                  if (tag == '区域位置') {
+                    setState(() => _selectedTags.removeWhere((t) => t.startsWith(widget.players[0].name) || t.startsWith(widget.players[1].name) || tag == t));
+                  } else {
+                    setState(() => _selectedTags.remove(tag));
+                  }
                 }
               },
             );
@@ -321,32 +329,45 @@ class _GameScreenState extends State<GameScreen> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Row(
+          child: Column(
             children: [
               if (_selectedTags.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: Wrap(spacing: 2, children: _selectedTags.map((t) =>
-                    Chip(label: Text(t, style: const TextStyle(fontSize: 10)), visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
-                  ).toList()),
-                ),
-              Expanded(
-                child: TextField(
-                  controller: _memoCtrl,
-                  decoration: const InputDecoration(
-                    hintText: '记录事件...',
-                    border: OutlineInputBorder(),
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Wrap(
+                    spacing: 2,
+                    runSpacing: 2,
+                    children: _selectedTags.map((t) => Chip(
+                      label: Text(t, style: const TextStyle(fontSize: 10)),
+                      visualDensity: VisualDensity.compact,
+                      padding: EdgeInsets.zero,
+                      deleteIcon: const Icon(Icons.close, size: 14),
+                      onDeleted: () => setState(() => _selectedTags.remove(t)),
+                    )).toList(),
                   ),
-                  onSubmitted: (_) => _addMemo(),
                 ),
-              ),
-              const SizedBox(width: 6),
-              IconButton(
-                icon: const Icon(Icons.send, size: 22),
-                color: Theme.of(context).colorScheme.primary,
-                onPressed: _addMemo,
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _memoCtrl,
+                      decoration: const InputDecoration(
+                        hintText: '记录事件...',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                      ),
+                      onSubmitted: (_) => _addMemo(),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(Icons.send, size: 22),
+                    color: Theme.of(context).colorScheme.primary,
+                    onPressed: _addMemo,
+                  ),
+                ],
               ),
             ],
           ),
@@ -902,7 +923,7 @@ class _FieldTagDialogState extends State<_FieldTagDialog> {
         _text += '、$label';
       }
     });
-    _ctrl.text = '$widget.playerName的$label';
+    _ctrl.text = '$widget.playerName的$zone$pos';
   }
 
   @override
@@ -924,9 +945,9 @@ class _FieldTagDialogState extends State<_FieldTagDialog> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _zoneBox('额外怪兽区左', '额外怪兽区 左', cs.primary),
+                _zoneBox('额外怪兽区', '左', '额外怪兽区 左', cs.primary),
                 const SizedBox(width: 8),
-                _zoneBox('额外怪兽区右', '额外怪兽区 右', cs.primary),
+                _zoneBox('额外怪兽区', '右', '额外怪兽区 右', cs.primary),
               ],
             ),
             const SizedBox(height: 6),
@@ -935,7 +956,7 @@ class _FieldTagDialogState extends State<_FieldTagDialog> {
               children: List.generate(5, (i) => Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(right: i < 4 ? 4 : 0),
-                  child: _zoneBox('怪兽${i + 1}', '主要怪兽区${i + 1}', cs.secondary),
+                  child: _zoneBox('主要怪兽区', '${i + 1}', '怪兽${i + 1}', cs.secondary),
                 ),
               )),
             ),
@@ -945,7 +966,7 @@ class _FieldTagDialogState extends State<_FieldTagDialog> {
               children: List.generate(5, (i) => Expanded(
                 child: Padding(
                   padding: EdgeInsets.only(right: i < 4 ? 4 : 0),
-                  child: _zoneBox('魔陷${i + 1}', '魔法·陷阱区${i + 1}', _isPendulum(i) ? Colors.purple.shade300 : cs.tertiary),
+                  child: _zoneBox('魔法·陷阱区', '${i + 1}', '魔陷${i + 1}', _isPendulum(i) ? Colors.purple.shade300 : cs.tertiary),
                 ),
               )),
             ),
@@ -955,12 +976,12 @@ class _FieldTagDialogState extends State<_FieldTagDialog> {
               spacing: 4,
               runSpacing: 4,
               children: [
-                _zoneBox('场地区', '场地区', Colors.green.shade300),
-                _zoneBox('额外卡组', '额外卡组', Colors.orange.shade300),
-                _zoneBox('卡组', '卡组', Colors.blueGrey.shade300),
-                _zoneBox('墓地', '墓地', Colors.grey.shade400),
-                _zoneBox('手牌', '手牌', Colors.amber.shade200),
-                _zoneBox('除外状态', '除外状态', Colors.red.shade200),
+                _zoneBox('场地区', '', '场地区', Colors.green.shade300),
+                _zoneBox('额外卡组', '', '额外卡组', Colors.orange.shade300),
+                _zoneBox('卡组', '', '卡组', Colors.blueGrey.shade300),
+                _zoneBox('墓地', '', '墓地', Colors.grey.shade400),
+                _zoneBox('手牌', '', '手牌', Colors.amber.shade200),
+                _zoneBox('除外状态', '', '除外状态', Colors.red.shade200),
               ],
             ),
             const SizedBox(height: 12),
@@ -994,10 +1015,10 @@ class _FieldTagDialogState extends State<_FieldTagDialog> {
 
   bool _isPendulum(int i) => i == 0 || i == 4;
 
-  Widget _zoneBox(String key, String label, Color color) {
-    final isFieldOrGrave = key.length > 3;
+  Widget _zoneBox(String zoneName, String pos, String display, Color color) {
+    final isFieldOrGrave = zoneName.length > 3 && !zoneName.contains(RegExp(r'\d'));
     return GestureDetector(
-      onTap: () => _tapZone(key.replaceAll(RegExp(r'\d'), ''), label.contains(RegExp(r'\d')) ? label.substring(label.length - 1) : ''),
+      onTap: () => _tapZone(zoneName, pos),
       child: Container(
         width: isFieldOrGrave ? null : double.infinity,
         constraints: BoxConstraints(
@@ -1011,7 +1032,7 @@ class _FieldTagDialogState extends State<_FieldTagDialog> {
           border: Border.all(color: color.withOpacity(0.6)),
         ),
         child: Center(
-          child: Text(label, style: TextStyle(fontSize: 10, color: color.computeLuminance() > 0.6 ? Colors.black87 : color)),
+          child: Text(display, style: TextStyle(fontSize: 10, color: color.computeLuminance() > 0.6 ? Colors.black87 : color)),
         ),
       ),
     );
