@@ -473,8 +473,12 @@ class _GameScreenState extends State<GameScreen> {
             color: r.lpDelta! >= 0 ? Colors.green.withOpacity(0.08) : Colors.red.withOpacity(0.08),
             child: ListTile(
               dense: true, visualDensity: VisualDensity.compact,
-              leading: CircleAvatar(radius: 14, backgroundColor: r.lpDelta! >= 0 ? Colors.green : Colors.red, child: Text('$sign${r.lpDelta}', style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold))),
-              title: Text(p.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+              leading: CircleAvatar(
+                radius: 14,
+                backgroundColor: r.lpDelta! >= 0 ? Colors.green : Colors.red,
+                child: Icon(r.lpDelta! >= 0 ? Icons.add : Icons.remove, size: 16, color: Colors.white),
+              ),
+              title: Text('${p.name}  $sign${r.lpDelta!.abs()}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
               subtitle: Text('${r.lpBefore} → ${r.lpAfter}  回合${r.turnNumber} · ${r.phase} · $time', style: const TextStyle(fontSize: 11)),
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                 IconButton(icon: const Icon(Icons.edit_outlined, size: 16), onPressed: () => _editRecord(r)),
