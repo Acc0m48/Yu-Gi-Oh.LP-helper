@@ -1,16 +1,43 @@
-# lp_app
+# LP助手
 
-A new Flutter project.
+游戏王桌游辅助工具 —— 专为线下实体卡牌对战设计的 LP 计数与回合管理 App。
 
-## Getting Started
+> 🎉 这是我第一个上传到 GitHub 的项目！
 
-This project is a starting point for a Flutter application.
+## 功能
 
-A few resources to get you started if this is your first Flutter project:
+- **LP 计算器** — 双人并排 LP 显示，点击弹出数字键盘进行加减操作，支持支付一半/扣500/扣1000 快捷操作
+- **变动历史与撤销** — 每次 LP 变动自动记录，支持撤销回退
+- **回合管理** — 全局回合计数，回合栏显示当前玩家，点击 + 推进回合并自动切换玩家
+- **阶段选择** — 抽卡 / 准备 / 主要1 / 战斗 / 主要2 / 结束，符合游戏王 Master Rule 2020
+- **先攻决定** — 骰子（5秒动画）/ 硬币（7.5秒 3D 翻转动画）/ 自定 三种方式
+- **回合备忘录** — 选择阶段后记录事件，统一时间线中混合显示 LP 变动 + 备忘记录
+- **多对局管理** — 侧边栏创建/切换/删除对局，数据实时保存至本地 JSON
+- **导入/导出** — 复制全部对局数据为 JSON，支持跨设备迁移
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 技术栈
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+| 类别 | 技术 |
+|------|------|
+| 框架 | Flutter 3.32 |
+| 语言 | Dart 3.8 |
+| 平台 | Android |
+| 持久化 | JSON 文件 (path_provider) |
+| 图标处理 | Python Pillow |
+
+## 构建
+
+```bash
+flutter pub get
+flutter build apk --release
+```
+
+APK 输出至 `build/app/outputs/flutter-apk/app-release.apk`
+
+## 开发说明
+
+本项目由 **AI 辅助开发**（OpenCode + DeepSeek），从项目搭建、功能实现到图标处理全程由 AI 协助完成。
+
+## 许可
+
+MIT License
