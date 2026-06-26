@@ -58,7 +58,7 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   int _selectedPlayerIndex = 0;
   String _selectedPhase = _phases[0];
-  String? _selectedTag;
+  final Set<String> _selectedTags = {};
   final TextEditingController _memoCtrl = TextEditingController();
 
   List<String> get _presetTags => [
@@ -70,6 +70,8 @@ class _GameScreenState extends State<GameScreen> {
     '攻击',
     '连锁',
     '伤害',
+    '特殊召唤',
+    '区域位置',
   ];
 
   void _applyLpChange(int amount, bool isAdd) {
@@ -108,20 +110,20 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _addMemo() {
-    final tag = _selectedTag ?? '';
     final raw = _memoCtrl.text.trim();
-    String note = raw;
-    if (tag.isNotEmpty && raw.isNotEmpty) {
-      note = '[$tag] $raw';
-    }
     if (raw.isEmpty) return;
+    var note = raw;
+    if (_selectedTags.isNotEmpty) {
+      final tagsStr = _selectedTags.map((t) => '[$t]').join(' ');
+      note = '$tagsStr $raw';
+    }
     widget.memos.insert(0, TurnRecord(
       turnNumber: widget.turn,
       phase: _selectedPhase,
       note: note,
     ));
     _memoCtrl.clear();
-    setState(() => _selectedTag = null);
+    setState(() => _selectedTags.clear());
     widget.onDataChanged();
     setState(() {});
   }
@@ -151,6 +153,18 @@ class _GameScreenState extends State<GameScreen> {
             child: const Text('保存'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openFieldDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => _FieldTagDialog(
+        playerName: widget.players[widget.currentPlayerIndex].name,
+        onConfirm: (text) {
+          setState(() => _selectedTags.add(text));
+        },
       ),
     );
   }
@@ -266,12 +280,33 @@ class _GameScreenState extends State<GameScreen> {
           child: Wrap(
             spacing: 4,
             runSpacing: 2,
-            children: _presetTags.map((tag) => InputChip(
-              label: Text(tag, style: const TextStyle(fontSize: 11)),
-              selected: _selectedTag == tag,
-              visualDensity: VisualDensity.compact,
-              onSelected: (_) => setState(() => _selectedTag = _selectedTag == tag ? null : tag),
-            )).toList(),
+            children: _presetTags.map((tag) {
+              final isFieldTag = tag == '区域位置';
+              return InputChip(
+                avatar: isFieldTag ? const Icon(Icons.grid_view, size: 14) : null,
+                label: Text(tag, style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isFieldTag ? FontWeight.bold : FontWeight.normal,
+                )),
+                selected: _selectedTags.contains(tag),
+                visualDensity: VisualDensity.compact,
+                selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                checkmarkColor: Theme.of(context).colorScheme.primary,
+                backgroundColor: isFieldTag ? Theme.of(context).colorScheme.primary.withOpacity(0.08) : null,
+                side: isFieldTag ? BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.4)) : null,
+              onSelected: (v) {
+                if (v) {
+                  if (tag == '区域位置') {
+                    _openFieldDialog();
+                    return;
+                  }
+                  setState(() => _selectedTags.add(tag));
+                } else {
+                  setState(() => _selectedTags.remove(tag));
+                }
+              },
+            );
+          }).toList(),
           ),
         ),
         Padding(
@@ -288,10 +323,13 @@ class _GameScreenState extends State<GameScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
-              if (_selectedTag != null) ...[
-                Chip(label: Text(_selectedTag!, style: const TextStyle(fontSize: 11)), visualDensity: VisualDensity.compact),
-                const SizedBox(width: 4),
-              ],
+              if (_selectedTags.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Wrap(spacing: 2, children: _selectedTags.map((t) =>
+                    Chip(label: Text(t, style: const TextStyle(fontSize: 10)), visualDensity: VisualDensity.compact, padding: EdgeInsets.zero),
+                  ).toList()),
+                ),
               Expanded(
                 child: TextField(
                   controller: _memoCtrl,
@@ -823,6 +861,158 @@ class _LpDialogState extends State<_LpDialog> {
         ),
         onPressed: onTap,
         child: Text(label),
+      ),
+    );
+  }
+}
+
+// === Field Zone Selection Dialog ===
+class _FieldTagDialog extends StatefulWidget {
+  final String playerName;
+  final ValueChanged<String> onConfirm;
+
+  const _FieldTagDialog({required this.playerName, required this.onConfirm});
+
+  @override
+  State<_FieldTagDialog> createState() => _FieldTagDialogState();
+}
+
+class _FieldTagDialogState extends State<_FieldTagDialog> {
+  String _text = '';
+  final _ctrl = TextEditingController();
+
+  final _zones = {
+    '额外怪兽区': ['左', '右'],
+    '主要怪兽区': ['1', '2', '3', '4', '5'],
+    '魔法·陷阱区': ['1', '2', '3', '4', '5'],
+    '场地区': [''],
+    '墓地': [''],
+    '额外卡组': [''],
+    '卡组': [''],
+    '手牌': [''],
+    '除外状态': [''],
+  };
+
+  void _tapZone(String zone, String pos) {
+    final label = pos.isEmpty ? zone : '$zone$pos';
+    setState(() {
+      if (_text.isEmpty) {
+        _text = label;
+      } else {
+        _text += '、$label';
+      }
+    });
+    _ctrl.text = '$widget.playerName的$label';
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return AlertDialog(
+      title: const Text('选择区域位置', textAlign: TextAlign.center),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Extra Monster Zone
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _zoneBox('额外怪兽区左', '额外怪兽区 左', cs.primary),
+                const SizedBox(width: 8),
+                _zoneBox('额外怪兽区右', '额外怪兽区 右', cs.primary),
+              ],
+            ),
+            const SizedBox(height: 6),
+            // Main Monster Zone (row of 5)
+            Row(
+              children: List.generate(5, (i) => Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: i < 4 ? 4 : 0),
+                  child: _zoneBox('怪兽${i + 1}', '主要怪兽区${i + 1}', cs.secondary),
+                ),
+              )),
+            ),
+            const SizedBox(height: 6),
+            // Spell/Trap Zone (row of 5)
+            Row(
+              children: List.generate(5, (i) => Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(right: i < 4 ? 4 : 0),
+                  child: _zoneBox('魔陷${i + 1}', '魔法·陷阱区${i + 1}', _isPendulum(i) ? Colors.purple.shade300 : cs.tertiary),
+                ),
+              )),
+            ),
+            const SizedBox(height: 6),
+            // Other zones
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                _zoneBox('场地区', '场地区', Colors.green.shade300),
+                _zoneBox('额外卡组', '额外卡组', Colors.orange.shade300),
+                _zoneBox('卡组', '卡组', Colors.blueGrey.shade300),
+                _zoneBox('墓地', '墓地', Colors.grey.shade400),
+                _zoneBox('手牌', '手牌', Colors.amber.shade200),
+                _zoneBox('除外状态', '除外状态', Colors.red.shade200),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _ctrl,
+              decoration: InputDecoration(
+                labelText: '位置描述',
+                hintText: '${widget.playerName}的...',
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () { _ctrl.clear(); setState(() => _text = ''); }, child: const Text('清空')),
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        FilledButton(
+          onPressed: () {
+            if (_ctrl.text.trim().isNotEmpty) {
+              widget.onConfirm(_ctrl.text.trim());
+              Navigator.pop(context);
+            }
+          },
+          child: const Text('确认'),
+        ),
+      ],
+    );
+  }
+
+  bool _isPendulum(int i) => i == 0 || i == 4;
+
+  Widget _zoneBox(String key, String label, Color color) {
+    final isFieldOrGrave = key.length > 3;
+    return GestureDetector(
+      onTap: () => _tapZone(key.replaceAll(RegExp(r'\d'), ''), label.contains(RegExp(r'\d')) ? label.substring(label.length - 1) : ''),
+      child: Container(
+        width: isFieldOrGrave ? null : double.infinity,
+        constraints: BoxConstraints(
+          minWidth: isFieldOrGrave ? 60 : 0,
+          minHeight: 40,
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withOpacity(0.6)),
+        ),
+        child: Center(
+          child: Text(label, style: TextStyle(fontSize: 10, color: color.computeLuminance() > 0.6 ? Colors.black87 : color)),
+        ),
       ),
     );
   }
