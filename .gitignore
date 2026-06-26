@@ -17,6 +17,8 @@ build/
 .project
 .classpath
 .settings/
+*.iml
+.metadata
 
 # === OS ===
 .DS_Store
@@ -32,6 +34,7 @@ Desktop.ini
 /android/local.properties
 /android/*.keystore
 /android/*.jks
+/android/*.iml
 
 # === iOS ===
 /ios/Pods/
