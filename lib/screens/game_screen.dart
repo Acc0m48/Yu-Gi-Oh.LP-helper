@@ -275,6 +275,15 @@ class _GameScreenState extends State<GameScreen> {
     }
   }
 
+  void _openSelfLimitDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => _SelfLimitDialog(
+        onConfirm: (text) => setState(() => _selectedTags.add(text)),
+      ),
+    );
+  }
+
   void _openFieldDialog() {
     showDialog(
       context: context,
@@ -342,10 +351,11 @@ class _GameScreenState extends State<GameScreen> {
                         backgroundColor: isFieldTag ? Theme.of(context).colorScheme.primary.withOpacity(0.08) : null,
                         side: isFieldTag ? BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.4)) : null,
                         onSelected: (v) {
-                          if (v) {
-                            if (tag == '区域位置') { _openFieldDialog(); return; }
-                            setState(() => _selectedTags.add(tag));
-                          } else {
+              if (v) {
+                  if (tag == '区域位置') { _openFieldDialog(); return; }
+                  if (tag == '自肃') { _openSelfLimitDialog(); return; }
+                  setState(() => _selectedTags.add(tag));
+                } else {
                             setState(() => _selectedTags.remove(tag));
                           }
                         },
@@ -645,5 +655,60 @@ class _FieldTagDialogState extends State<_FieldTagDialog> {
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
       decoration: BoxDecoration(color: color.withOpacity(0.3), borderRadius: BorderRadius.circular(6), border: Border.all(color: color.withOpacity(0.6))),
       child: Center(child: Text(display, style: TextStyle(fontSize: 10, color: color.computeLuminance() > 0.6 ? Colors.black87 : color)))));
+  }
+}
+
+// === Self-Limit Dialog ===
+class _SelfLimitDialog extends StatefulWidget {
+  final ValueChanged<String> onConfirm;
+  const _SelfLimitDialog({required this.onConfirm});
+  @override State<_SelfLimitDialog> createState() => _SelfLimitDialogState();
+}
+
+class _SelfLimitDialogState extends State<_SelfLimitDialog> {
+  final _ctrl = TextEditingController();
+  final _presets = [
+    '当前回合结束阶段之前',
+    '当前回合之前',
+    '下个回合的准备阶段之前',
+    '下个回合之前',
+    '下个回合结束阶段之前',
+    '本次决斗中',
+  ];
+
+  void _select(String text) {
+    _ctrl.text = '自肃：$text';
+  }
+
+  @override void dispose() { _ctrl.dispose(); super.dispose(); }
+  @override Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('自肃时间范围', textAlign: TextAlign.center),
+      content: SingleChildScrollView(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ..._presets.map((p) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: SizedBox(width: double.infinity, child: OutlinedButton(
+              onPressed: () => _select(p),
+              child: Text(p, style: const TextStyle(fontSize: 13)),
+            )),
+          )),
+          const Divider(),
+          TextField(
+            controller: _ctrl,
+            decoration: const InputDecoration(labelText: '自定义', hintText: '自肃：...', border: OutlineInputBorder(), isDense: true),
+          ),
+        ]),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+        FilledButton(onPressed: () {
+          if (_ctrl.text.trim().isNotEmpty) {
+            widget.onConfirm(_ctrl.text.trim());
+            Navigator.pop(context);
+          }
+        }, child: const Text('确认')),
+      ],
+    );
   }
 }
