@@ -308,79 +308,91 @@ class _GameScreenState extends State<GameScreen> {
             ),
           ),
         const Divider(height: 1),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
-          child: Wrap(
-            spacing: 4, runSpacing: 2,
-            children: _phases.map((p) => ChoiceChip(
-              label: Text(p, style: const TextStyle(fontSize: 11)),
-              selected: _selectedPhase == p,
-              selectedColor: Theme.of(context).colorScheme.primaryContainer,
-              visualDensity: VisualDensity.compact,
-              onSelected: (_) => setState(() => _selectedPhase = p),
-            )).toList(),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                  child: Wrap(
+                    spacing: 4, runSpacing: 2,
+                    children: _phases.map((p) => ChoiceChip(
+                      label: Text(p, style: const TextStyle(fontSize: 11)),
+                      selected: _selectedPhase == p,
+                      selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                      visualDensity: VisualDensity.compact,
+                      onSelected: (_) => setState(() => _selectedPhase = p),
+                    )).toList(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  child: Wrap(
+                    spacing: 4, runSpacing: 2,
+                    children: _presetTags.map((tag) {
+                      final isFieldTag = tag == '区域位置';
+                      return InputChip(
+                        avatar: isFieldTag ? const Icon(Icons.grid_view, size: 14) : null,
+                        label: Text(tag, style: TextStyle(fontSize: 11, fontWeight: isFieldTag ? FontWeight.bold : FontWeight.normal)),
+                        selected: _selectedTags.contains(tag),
+                        visualDensity: VisualDensity.compact,
+                        selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                        checkmarkColor: Theme.of(context).colorScheme.primary,
+                        backgroundColor: isFieldTag ? Theme.of(context).colorScheme.primary.withOpacity(0.08) : null,
+                        side: isFieldTag ? BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.4)) : null,
+                        onSelected: (v) {
+                          if (v) {
+                            if (tag == '区域位置') { _openFieldDialog(); return; }
+                            setState(() => _selectedTags.add(tag));
+                          } else {
+                            setState(() => _selectedTags.remove(tag));
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                  child: Row(children: [
+                    _toolBtn(Icons.casino, '骰子', Theme.of(context).colorScheme.tertiary, _rollDice),
+                    const SizedBox(width: 8),
+                    _toolBtn(Icons.token, '硬币', Theme.of(context).colorScheme.secondary, _flipCoin),
+                  ]),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Column(children: [
+                    if (_selectedTags.isNotEmpty)
+                      Container(
+                        width: double.infinity, padding: const EdgeInsets.only(bottom: 4),
+                        child: Wrap(spacing: 2, runSpacing: 2, children: _selectedTags.map((t) => Chip(
+                          label: Text(t, style: const TextStyle(fontSize: 10)),
+                          visualDensity: VisualDensity.compact, padding: EdgeInsets.zero,
+                          deleteIcon: const Icon(Icons.close, size: 14),
+                          onDeleted: () => setState(() => _selectedTags.remove(t)),
+                        )).toList()),
+                      ),
+                    Row(children: [
+                      Expanded(child: TextField(
+                        controller: _memoCtrl,
+                        decoration: const InputDecoration(hintText: '记录事件...', border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 10)),
+                        onSubmitted: (_) => _addMemo(),
+                      )),
+                      const SizedBox(width: 6),
+                      IconButton(icon: const Icon(Icons.send, size: 22), color: Theme.of(context).colorScheme.primary, onPressed: _addMemo),
+                    ]),
+                  ]),
+                ),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.5,
+                  child: _buildRecordList(records),
+                ),
+              ],
+            ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-          child: Wrap(
-            spacing: 4, runSpacing: 2,
-            children: _presetTags.map((tag) {
-              final isFieldTag = tag == '区域位置';
-              return InputChip(
-                avatar: isFieldTag ? const Icon(Icons.grid_view, size: 14) : null,
-                label: Text(tag, style: TextStyle(fontSize: 11, fontWeight: isFieldTag ? FontWeight.bold : FontWeight.normal)),
-                selected: _selectedTags.contains(tag),
-                visualDensity: VisualDensity.compact,
-                selectedColor: Theme.of(context).colorScheme.primaryContainer,
-                checkmarkColor: Theme.of(context).colorScheme.primary,
-                backgroundColor: isFieldTag ? Theme.of(context).colorScheme.primary.withOpacity(0.08) : null,
-                side: isFieldTag ? BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.4)) : null,
-                onSelected: (v) {
-                  if (v) {
-                    if (tag == '区域位置') { _openFieldDialog(); return; }
-                    setState(() => _selectedTags.add(tag));
-                  } else {
-                    setState(() => _selectedTags.remove(tag));
-                  }
-                },
-              );
-            }).toList(),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-          child: Row(children: [
-            _toolBtn(Icons.casino, '骰子', Theme.of(context).colorScheme.tertiary, _rollDice),
-            const SizedBox(width: 8),
-            _toolBtn(Icons.token, '硬币', Theme.of(context).colorScheme.secondary, _flipCoin),
-          ]),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Column(children: [
-            if (_selectedTags.isNotEmpty)
-              Container(
-                width: double.infinity, padding: const EdgeInsets.only(bottom: 4),
-                child: Wrap(spacing: 2, runSpacing: 2, children: _selectedTags.map((t) => Chip(
-                  label: Text(t, style: const TextStyle(fontSize: 10)),
-                  visualDensity: VisualDensity.compact, padding: EdgeInsets.zero,
-                  deleteIcon: const Icon(Icons.close, size: 14),
-                  onDeleted: () => setState(() => _selectedTags.remove(t)),
-                )).toList()),
-              ),
-            Row(children: [
-              Expanded(child: TextField(
-                controller: _memoCtrl,
-                decoration: const InputDecoration(hintText: '记录事件...', border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(vertical: 6, horizontal: 10)),
-                onSubmitted: (_) => _addMemo(),
-              )),
-              const SizedBox(width: 6),
-              IconButton(icon: const Icon(Icons.send, size: 22), color: Theme.of(context).colorScheme.primary, onPressed: _addMemo),
-            ]),
-          ]),
-        ),
-        Expanded(child: _buildRecordList(records)),
       ],
     );
   }

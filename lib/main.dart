@@ -60,17 +60,20 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   List<Game> _games = [];
   Game? _currentGame;
+  AppSettings _settings = AppSettings();
 
   @override
   void initState() {
     super.initState();
-    _loadGames();
+    _loadAll();
   }
 
-  Future<void> _loadGames() async {
+  Future<void> _loadAll() async {
     final games = await GameStorage.loadAll();
+    final settings = await GameStorage.loadSettings();
     setState(() {
       _games = games;
+      _settings = settings;
       if (_currentGame == null && _games.isNotEmpty) {
         _currentGame = _games.first;
       } else if (_currentGame != null) {
@@ -85,11 +88,51 @@ class _MainScreenState extends State<MainScreen> {
     await GameStorage.save(_currentGame!);
   }
 
+  void _openSettings() {
+    final lpCtrl = TextEditingController(text: '${_settings.defaultLp}');
+    final p1Ctrl = TextEditingController(text: _settings.defaultP1Name);
+    final p2Ctrl = TextEditingController(text: _settings.defaultP2Name);
+    final dirCtrl = TextEditingController(text: _settings.exportDir);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDlg) => AlertDialog(
+          title: const Text('设置'),
+          content: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              TextField(controller: lpCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: '默认初始LP', border: OutlineInputBorder(), isDense: true)),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(child: TextField(controller: p1Ctrl, decoration: const InputDecoration(labelText: '默认玩家1名', border: OutlineInputBorder(), isDense: true))),
+                const SizedBox(width: 8),
+                Expanded(child: TextField(controller: p2Ctrl, decoration: const InputDecoration(labelText: '默认玩家2名', border: OutlineInputBorder(), isDense: true))),
+              ]),
+              const SizedBox(height: 8),
+              TextField(controller: dirCtrl, decoration: const InputDecoration(labelText: '导出目录（留空=剪贴板）', hintText: '/storage/emulated/0/Download', border: OutlineInputBorder(), isDense: true)),
+            ]),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
+            FilledButton(onPressed: () async {
+              _settings.defaultLp = int.tryParse(lpCtrl.text) ?? 8000;
+              _settings.defaultP1Name = p1Ctrl.text.trim().isEmpty ? '依' : p1Ctrl.text.trim();
+              _settings.defaultP2Name = p2Ctrl.text.trim().isEmpty ? '尔' : p2Ctrl.text.trim();
+              _settings.exportDir = dirCtrl.text.trim();
+              await GameStorage.saveSettings(_settings);
+              if (mounted) { Navigator.pop(ctx); setState(() {}); }
+            }, child: const Text('保存')),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _createGame() {
     final nameCtrl = TextEditingController();
-    final p1Ctrl = TextEditingController(text: '依');
-    final p2Ctrl = TextEditingController(text: '尔');
-    final lpCtrl = TextEditingController(text: '8000');
+    final p1Ctrl = TextEditingController(text: _settings.defaultP1Name);
+    final p2Ctrl = TextEditingController(text: _settings.defaultP2Name);
+    final lpCtrl = TextEditingController(text: '${_settings.defaultLp}');
 
     showDialog(
       context: context,
@@ -152,9 +195,9 @@ class _MainScreenState extends State<MainScreen> {
                 final name = nameCtrl.text.trim().isEmpty ? '对局' : nameCtrl.text.trim();
                 final now = DateTime.now();
                 final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-                final lp = int.tryParse(lpCtrl.text) ?? 8000;
-                final p1Name = p1Ctrl.text.trim().isEmpty ? '依' : p1Ctrl.text.trim();
-                final p2Name = p2Ctrl.text.trim().isEmpty ? '尔' : p2Ctrl.text.trim();
+                final lp = int.tryParse(lpCtrl.text) ?? _settings.defaultLp;
+                final p1Name = p1Ctrl.text.trim().isEmpty ? _settings.defaultP1Name : p1Ctrl.text.trim();
+                final p2Name = p2Ctrl.text.trim().isEmpty ? _settings.defaultP2Name : p2Ctrl.text.trim();
                 final game = Game(
                   id: now.millisecondsSinceEpoch.toString(),
                   name: '$name $dateStr',
@@ -332,12 +375,27 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Future<void> _exportData() async {
-    final json = await GameStorage.exportAll();
-    await Clipboard.setData(ClipboardData(text: json));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('数据已复制到剪贴板')),
-    );
+    if (_settings.exportDir.isNotEmpty) {
+      try {
+        await GameStorage.exportToFile(_settings.exportDir);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已导出到 ${_settings.exportDir}')),
+        );
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('导出失败，请检查目录路径')),
+        );
+      }
+    } else {
+      final json = await GameStorage.exportAll();
+      await Clipboard.setData(ClipboardData(text: json));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('数据已复制到剪贴板')),
+      );
+    }
   }
 
   Future<void> _importData() async {
@@ -347,13 +405,8 @@ class _MainScreenState extends State<MainScreen> {
       builder: (ctx) => AlertDialog(
         title: const Text('导入数据'),
         content: TextField(
-          controller: ctrl,
-          maxLines: 5,
-          decoration: const InputDecoration(
-            labelText: '粘贴JSON数据',
-            hintText: '粘贴之前导出的JSON数据...',
-            border: OutlineInputBorder(),
-          ),
+          controller: ctrl, maxLines: 5,
+          decoration: const InputDecoration(labelText: '粘贴JSON数据或输入文件路径', hintText: '粘贴JSON或输入完整文件路径...', border: OutlineInputBorder()),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
@@ -363,8 +416,12 @@ class _MainScreenState extends State<MainScreen> {
     );
     if (result != null && result.isNotEmpty) {
       try {
-        await GameStorage.importData(result);
-        await _loadGames();
+        if (result.startsWith('{') || result.startsWith('[')) {
+          await GameStorage.importData(result);
+        } else {
+          await GameStorage.importFromFile(result);
+        }
+        await _loadAll();
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('导入成功')));
       } catch (_) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('导入失败，请检查数据格式')));
@@ -521,6 +578,11 @@ class _MainScreenState extends State<MainScreen> {
               onTap: () { Navigator.pop(context); _importData(); },
             ),
             const Divider(),
+            ListTile(
+              leading: const Icon(Icons.settings_outlined),
+              title: const Text('设置'),
+              onTap: () { Navigator.pop(context); _openSettings(); },
+            ),
             SwitchListTile(
               secondary: const Icon(Icons.dark_mode),
               title: const Text('深色主题', style: TextStyle(fontSize: 14)),

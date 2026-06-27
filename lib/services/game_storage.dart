@@ -3,15 +3,64 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/game.dart';
 
+class AppSettings {
+  int defaultLp;
+  String defaultP1Name;
+  String defaultP2Name;
+  String exportDir;
+
+  AppSettings({
+    this.defaultLp = 8000,
+    this.defaultP1Name = '依',
+    this.defaultP2Name = '尔',
+    this.exportDir = '',
+  });
+
+  Map<String, dynamic> toJson() => {
+    'defaultLp': defaultLp,
+    'defaultP1Name': defaultP1Name,
+    'defaultP2Name': defaultP2Name,
+    'exportDir': exportDir,
+  };
+
+  factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
+    defaultLp: json['defaultLp'] as int? ?? 8000,
+    defaultP1Name: json['defaultP1Name'] as String? ?? '依',
+    defaultP2Name: json['defaultP2Name'] as String? ?? '尔',
+    exportDir: json['exportDir'] as String? ?? '',
+  );
+}
+
 class GameStorage {
   static Future<String> get _dir async {
     final dir = await getApplicationDocumentsDirectory();
     final gamesDir = Directory('${dir.path}/games');
-    if (!await gamesDir.exists()) {
-      await gamesDir.create(recursive: true);
-    }
+    if (!await gamesDir.exists()) await gamesDir.create(recursive: true);
     return gamesDir.path;
   }
+
+  static Future<File> get _settingsFile async {
+    final dir = await getApplicationDocumentsDirectory();
+    return File('${dir.path}/lp_settings.json');
+  }
+
+  static Future<AppSettings> loadSettings() async {
+    try {
+      final f = await _settingsFile;
+      if (await f.exists()) {
+        final json = jsonDecode(await f.readAsString());
+        return AppSettings.fromJson(json as Map<String, dynamic>);
+      }
+    } catch (_) {}
+    return AppSettings();
+  }
+
+  static Future<void> saveSettings(AppSettings s) async {
+    final f = await _settingsFile;
+    await f.writeAsString(jsonEncode(s.toJson()));
+  }
+
+  static String? get exportDirectory => null;
 
   static Future<List<Game>> loadAll() async {
     final dirPath = await _dir;
@@ -37,9 +86,7 @@ class GameStorage {
   static Future<void> delete(Game game) async {
     final dirPath = await _dir;
     final file = File('$dirPath/${game.id}.json');
-    if (await file.exists()) {
-      await file.delete();
-    }
+    if (await file.exists()) await file.delete();
   }
 
   static Future<String> exportAll() async {
@@ -47,11 +94,27 @@ class GameStorage {
     return jsonEncode(games.map((g) => g.toJson()).toList());
   }
 
+  static Future<void> exportToFile(String dirPath) async {
+    final json = await exportAll();
+    final now = DateTime.now();
+    final name = 'LP_export_${now.year}${now.month.toString().padLeft(2,'0')}${now.day.toString().padLeft(2,'0')}_${now.hour.toString().padLeft(2,'0')}${now.minute.toString().padLeft(2,'0')}.json';
+    final file = File('$dirPath/$name');
+    await file.writeAsString(json);
+  }
+
   static Future<void> importData(String jsonString) async {
     final list = jsonDecode(jsonString) as List<dynamic>;
     for (final item in list) {
       final game = Game.fromJson(item as Map<String, dynamic>);
       await save(game);
+    }
+  }
+
+  static Future<void> importFromFile(String path) async {
+    final file = File(path);
+    if (await file.exists()) {
+      final jsonString = await file.readAsString();
+      await importData(jsonString);
     }
   }
 }
