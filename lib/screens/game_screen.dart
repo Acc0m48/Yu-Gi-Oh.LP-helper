@@ -1,11 +1,14 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/player.dart';
-import '../models/turn_record.dart';
 import '../models/game.dart';
+import '../models/turn_record.dart';
 import '../widgets/numeric_keypad.dart';
 
 const _phases = ['抽卡阶段', '准备阶段', '主要阶段1', '战斗阶段', '主要阶段2', '结束阶段'];
+const _quick500 = 500;
+const _quick1000 = 1000;
 
 class GameScreen extends StatefulWidget {
   final List<Player> players;
@@ -38,6 +41,7 @@ class _GameScreenState extends State<GameScreen> {
   String _selectedPhase = _phases[0];
   final Set<String> _selectedTags = {};
   final TextEditingController _memoCtrl = TextEditingController();
+  List<TurnRecord>? _cachedRecords; // invalidated on each data change
 
   List<String> get _presetTags => [
     widget.players[0].name,
@@ -63,7 +67,7 @@ class _GameScreenState extends State<GameScreen> {
       lpAfter: after,
     ));
     widget.onDataChanged();
-    setState(() {});
+    setState(() { _cachedRecords = null; });
   }
 
   void _applyLpChange(int amount, bool isAdd) {
@@ -75,7 +79,8 @@ class _GameScreenState extends State<GameScreen> {
       player.lp -= amount;
     }
     _recordLp(_selectedPlayerIndex, isAdd ? amount : -amount, prev, player.lp);
-    setState(() {});
+    HapticFeedback.lightImpact();
+    setState(() { _cachedRecords = null; });
   }
 
   void _payHalf() {
@@ -95,7 +100,7 @@ class _GameScreenState extends State<GameScreen> {
     widget.memos.remove(last);
     Game.recalculateLpStatic(widget.players, widget.memos, widget.initialLp);
     widget.onDataChanged();
-    setState(() {});
+    setState(() { _cachedRecords = null; });
   }
 
   void _addMemo() {
@@ -114,7 +119,7 @@ class _GameScreenState extends State<GameScreen> {
     _memoCtrl.clear();
     setState(() => _selectedTags.clear());
     widget.onDataChanged();
-    setState(() {});
+    setState(() { _cachedRecords = null; });
   }
 
   void _editRecord(TurnRecord record) {
@@ -266,12 +271,14 @@ class _GameScreenState extends State<GameScreen> {
   void _advanceTurn() {
     widget.onTurnChanged(widget.turn + 1);
     widget.onCurrentPlayerChanged(1 - widget.currentPlayerIndex);
+    HapticFeedback.selectionClick();
   }
 
   void _retreatTurn() {
     if (widget.turn > 1) {
       widget.onTurnChanged(widget.turn - 1);
       widget.onCurrentPlayerChanged(1 - widget.currentPlayerIndex);
+      HapticFeedback.selectionClick();
     }
   }
 
@@ -297,8 +304,9 @@ class _GameScreenState extends State<GameScreen> {
   @override
   Widget build(BuildContext context) {
     final cp = widget.players[widget.currentPlayerIndex];
-    final records = List<TurnRecord>.from(widget.memos)
+    _cachedRecords ??= List<TurnRecord>.from(widget.memos)
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final records = _cachedRecords!;
     return Column(
       children: [
         _buildTurnBar(cp),

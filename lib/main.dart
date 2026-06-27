@@ -302,7 +302,7 @@ class _MainScreenState extends State<MainScreen> {
     final game = _currentGame;
     return Scaffold(
       appBar: AppBar(
-        title: Text(game?.name ?? 'LP助手'),
+        title: Text(game?.name ?? 'LP助手', overflow: TextOverflow.ellipsis),
         centerTitle: true,
         actions: game != null && !game.gameStarted
             ? [
