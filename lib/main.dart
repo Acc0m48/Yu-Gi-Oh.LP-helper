@@ -7,6 +7,7 @@ import 'screens/game_screen.dart';
 import 'screens/settings_page.dart';
 import 'screens/start_game_dialogs.dart';
 import 'widgets/game_drawer.dart';
+import 'theme.dart';
 
 void main() {
   runApp(const LpApp());
@@ -36,16 +37,8 @@ class _LpAppState extends State<LpApp> {
     return MaterialApp(
       title: 'LP助手',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.indigo,
-        useMaterial3: true,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.indigo,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
+      theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
       themeMode: _themeMode,
       home: const MainScreen(),
     );

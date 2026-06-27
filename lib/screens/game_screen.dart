@@ -5,6 +5,7 @@ import '../models/player.dart';
 import '../models/game.dart';
 import '../models/turn_record.dart';
 import '../widgets/numeric_keypad.dart';
+import '../theme.dart';
 
 const _phases = ['抽卡阶段', '准备阶段', '主要阶段1', '战斗阶段', '主要阶段2', '结束阶段'];
 const _quick500 = 500;
@@ -480,7 +481,7 @@ class _GameScreenState extends State<GameScreen> {
             ],
           ]),
           const SizedBox(height: 4),
-          Text('${player.lp}', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: player.lp > 0 ? Colors.green : Colors.red)),
+          Text('${player.lp}', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: player.lp > 0 ? AppColors.lpPositive : AppColors.lpNegative)),
           Text('LP', style: TextStyle(fontSize: 11, color: cs.onSurface.withOpacity(0.3))),
         ]),
       ),
@@ -500,12 +501,12 @@ class _GameScreenState extends State<GameScreen> {
           final sign = r.lpDelta! >= 0 ? '+' : '';
           return Card(
             margin: const EdgeInsets.only(bottom: 4),
-            color: r.lpDelta! >= 0 ? Colors.green.withOpacity(0.08) : Colors.red.withOpacity(0.08),
+            color: r.lpDelta! >= 0 ? AppColors.lpPositive.withOpacity(0.08) : AppColors.lpNegative.withOpacity(0.08),
             child: ListTile(
               dense: true, visualDensity: VisualDensity.compact,
               leading: CircleAvatar(
                 radius: 14,
-                backgroundColor: r.lpDelta! >= 0 ? Colors.green : Colors.red,
+                backgroundColor: r.lpDelta! >= 0 ? AppColors.lpPositive : AppColors.lpNegative,
                 child: Icon(r.lpDelta! >= 0 ? Icons.add : Icons.remove, size: 16, color: Colors.white),
               ),
               title: Text('${p.name}  $sign${r.lpDelta!.abs()}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
@@ -603,7 +604,7 @@ class _LpDialogState extends State<_LpDialog> {
         Expanded(child: _playerChip(0)), const SizedBox(width: 8), Expanded(child: _playerChip(1)),
       ])),
       Container(margin: const EdgeInsets.symmetric(horizontal: 24), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)),
-        child: Row(children: [Text(_isAdd ? '+' : '-', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _isAdd ? Colors.green : Colors.blue)), const Spacer(), Text(_buffer.isEmpty ? '0' : _buffer, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold))])),
+        child: Row(children: [Text(_isAdd ? '+' : '-', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _isAdd ? AppColors.lpPositive : Colors.blue)), const Spacer(), Text(_buffer.isEmpty ? '0' : _buffer, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold))])),
       const SizedBox(height: 4),
       Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
         _smallBtn('一半', Colors.orange, () { widget.onPayHalf(); Navigator.pop(context); }),
@@ -615,7 +616,7 @@ class _LpDialogState extends State<_LpDialog> {
     ])));
   }
   Widget _playerChip(int index) { final p = widget.players[index]; final sel = index == widget.playerIndex; final cs = Theme.of(context).colorScheme;
-    return GestureDetector(onTap: () => widget.onSelectPlayer(index), child: Container(padding: const EdgeInsets.symmetric(vertical: 8), decoration: BoxDecoration(color: sel ? cs.primaryContainer : cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(8), border: Border.all(color: sel ? cs.primary : cs.outline, width: sel ? 2 : 1)), child: Column(children: [Text(p.name, style: const TextStyle(fontSize: 13)), Text('${p.lp}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: p.lp > 0 ? Colors.green : Colors.red))]))); }
+    return GestureDetector(onTap: () => widget.onSelectPlayer(index), child: Container(padding: const EdgeInsets.symmetric(vertical: 8), decoration: BoxDecoration(color: sel ? cs.primaryContainer : cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(8), border: Border.all(color: sel ? cs.primary : cs.outline, width: sel ? 2 : 1)), child: Column(children: [Text(p.name, style: const TextStyle(fontSize: 13)), Text('${p.lp}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: p.lp > 0 ? AppColors.lpPositive : AppColors.lpNegative))]))); }
   Widget _smallBtn(String label, Color color, VoidCallback onTap) { return SizedBox(height: 28, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: color, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 8), textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)), onPressed: onTap, child: Text(label))); }
 }
 
