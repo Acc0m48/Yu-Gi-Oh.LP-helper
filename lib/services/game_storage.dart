@@ -9,6 +9,15 @@ class AppSettings {
   String defaultP2Name;
   String exportDir;
   int themeIndex;
+  int brightnessMode; // 0=system, 1=light, 2=dark
+
+  // Custom theme colors
+  int cLightSeed;
+  int cLightBg;
+  int cDarkSeed;
+  int cDarkBg;
+  int cLpPos;
+  int cLpNeg;
 
   AppSettings({
     this.defaultLp = 8000,
@@ -16,6 +25,13 @@ class AppSettings {
     this.defaultP2Name = '尔',
     this.exportDir = '',
     this.themeIndex = 0,
+    this.brightnessMode = 0,
+    this.cLightSeed = 0xFFD96C4A,
+    this.cLightBg = 0xFFF4E0D0,
+    this.cDarkSeed = 0xFFFFB347,
+    this.cDarkBg = 0xFF3B2D26,
+    this.cLpPos = 0xFFFF8C42,
+    this.cLpNeg = 0xFFD96C4A,
   });
 
   Map<String, dynamic> toJson() => {
@@ -24,6 +40,13 @@ class AppSettings {
     'defaultP2Name': defaultP2Name,
     'exportDir': exportDir,
     'themeIndex': themeIndex,
+    'brightnessMode': brightnessMode,
+    'cLightSeed': cLightSeed,
+    'cLightBg': cLightBg,
+    'cDarkSeed': cDarkSeed,
+    'cDarkBg': cDarkBg,
+    'cLpPos': cLpPos,
+    'cLpNeg': cLpNeg,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -32,6 +55,13 @@ class AppSettings {
     defaultP2Name: json['defaultP2Name'] as String? ?? '尔',
     exportDir: json['exportDir'] as String? ?? '',
     themeIndex: json['themeIndex'] as int? ?? 0,
+    brightnessMode: json['brightnessMode'] as int? ?? 0,
+    cLightSeed: json['cLightSeed'] as int? ?? 0xFFD96C4A,
+    cLightBg: json['cLightBg'] as int? ?? 0xFFF4E0D0,
+    cDarkSeed: json['cDarkSeed'] as int? ?? 0xFFFFB347,
+    cDarkBg: json['cDarkBg'] as int? ?? 0xFF3B2D26,
+    cLpPos: json['cLpPos'] as int? ?? 0xFFFF8C42,
+    cLpNeg: json['cLpNeg'] as int? ?? 0xFFD96C4A,
   );
 }
 

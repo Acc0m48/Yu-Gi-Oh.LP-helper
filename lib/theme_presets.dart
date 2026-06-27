@@ -125,6 +125,26 @@ const presets = <ThemePreset>[
   ),
 ];
 
+ThemePreset customPresetFrom({
+  required int lightSeed,
+  required int lightBg,
+  required int darkSeed,
+  required int darkBg,
+  required int lpPos,
+  required int lpNeg,
+}) {
+  return ThemePreset(
+    name: '自定义',
+    lightSeed: Color(lightSeed),
+    lightBg: Color(lightBg),
+    darkSeed: Color(darkSeed),
+    darkBg: Color(darkBg),
+    lpPositive: Color(lpPos),
+    lpNegative: Color(lpNeg),
+    previewColors: [Color(lightBg), Color(lightSeed), Color(darkSeed), Color(darkBg)],
+  );
+}
+
 class AppColors {
   final ThemePreset preset;
   const AppColors(this.preset);

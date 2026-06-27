@@ -24,8 +24,11 @@ class LpApp extends StatefulWidget {
 }
 
 class _LpAppState extends State<LpApp> {
-  ThemeMode _themeMode = ThemeMode.system;
   int _themeIndex = 0;
+  int _brightnessMode = 0;
+  int _cLightSeed = 0xFFD96C4A, _cLightBg = 0xFFF4E0D0;
+  int _cDarkSeed = 0xFFFFB347, _cDarkBg = 0xFF3B2D26;
+  int _cLpPos = 0xFFFF8C42, _cLpNeg = 0xFFD96C4A;
 
   @override
   void initState() {
@@ -35,20 +38,37 @@ class _LpAppState extends State<LpApp> {
 
   Future<void> _loadTheme() async {
     final s = await GameStorage.loadSettings();
-    setState(() { _themeIndex = s.themeIndex; _themeMode = ThemeMode.system; });
+    setState(() {
+      _themeIndex = s.themeIndex;
+      _brightnessMode = s.brightnessMode;
+      _cLightSeed = s.cLightSeed; _cLightBg = s.cLightBg;
+      _cDarkSeed = s.cDarkSeed; _cDarkBg = s.cDarkBg;
+      _cLpPos = s.cLpPos; _cLpNeg = s.cLpNeg;
+    });
   }
 
-  void setThemeIndex(int i) => setState(() => _themeIndex = i);
+  void applySettings(AppSettings s) {
+    setState(() {
+      _themeIndex = s.themeIndex;
+      _brightnessMode = s.brightnessMode;
+      _cLightSeed = s.cLightSeed; _cLightBg = s.cLightBg;
+      _cDarkSeed = s.cDarkSeed; _cDarkBg = s.cDarkBg;
+      _cLpPos = s.cLpPos; _cLpNeg = s.cLpNeg;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    final p = presets[_themeIndex.clamp(0, presets.length - 1)];
+    final p = _themeIndex < presets.length
+        ? presets[_themeIndex]
+        : customPresetFrom(lightSeed: _cLightSeed, lightBg: _cLightBg, darkSeed: _cDarkSeed, darkBg: _cDarkBg, lpPos: _cLpPos, lpNeg: _cLpNeg);
+    final mode = _brightnessMode == 1 ? ThemeMode.light : _brightnessMode == 2 ? ThemeMode.dark : ThemeMode.system;
     return MaterialApp(
       title: 'LP助手',
       debugShowCheckedModeBanner: false,
       theme: buildPresetLight(p),
       darkTheme: buildPresetDark(p),
-      themeMode: _themeMode,
+      themeMode: mode,
       home: const MainScreen(),
     );
   }
@@ -98,8 +118,11 @@ class _MainScreenState extends State<MainScreen> {
       MaterialPageRoute(
         builder: (_) => SettingsPage(
           settings: _settings,
-          onSaved: (s) => setState(() => _settings = s),
-          onThemeChanged: (i) => LpApp.of(context)?.setThemeIndex(i),
+          onSaved: (s) {
+            LpApp.of(context)?.applySettings(s);
+            setState(() => _settings = s);
+          },
+          onThemeChanged: (s) => LpApp.of(context)?.applySettings(s),
         ),
       ),
     );
