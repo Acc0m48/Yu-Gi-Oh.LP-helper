@@ -511,10 +511,10 @@ class _MainScreenState extends State<MainScreen> {
             ),
             const Divider(),
             Expanded(
-              child: ClipRect(
-                child: _games.isEmpty
-                    ? const Center(child: Text('暂无对局', style: TextStyle(color: Colors.grey)))
-                    : ListView.builder(
+              child: _games.isEmpty
+                  ? const Center(child: Text('暂无对局', style: TextStyle(color: Colors.grey)))
+                  : ListView.builder(
+                clipBehavior: Clip.hardEdge,
                       itemCount: _games.length,
                       itemBuilder: (context, index) {
                         final game = _games[index];
@@ -539,7 +539,6 @@ class _MainScreenState extends State<MainScreen> {
                         );
                       },
                     ),
-              ),
             ),
             const Divider(),
             ListTile(
