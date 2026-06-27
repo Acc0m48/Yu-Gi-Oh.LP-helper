@@ -5,6 +5,7 @@ import 'services/game_storage.dart';
 import 'models/game.dart';
 import 'models/player.dart';
 import 'screens/game_screen.dart';
+import 'screens/settings_page.dart';
 
 void main() {
   runApp(const LpApp());
@@ -89,40 +90,12 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _openSettings() {
-    final lpCtrl = TextEditingController(text: '${_settings.defaultLp}');
-    final p1Ctrl = TextEditingController(text: _settings.defaultP1Name);
-    final p2Ctrl = TextEditingController(text: _settings.defaultP2Name);
-    final dirCtrl = TextEditingController(text: _settings.exportDir);
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDlg) => AlertDialog(
-          title: const Text('设置'),
-          content: SingleChildScrollView(
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              TextField(controller: lpCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: '默认初始LP', border: OutlineInputBorder(), isDense: true)),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(child: TextField(controller: p1Ctrl, decoration: const InputDecoration(labelText: '默认玩家1名', border: OutlineInputBorder(), isDense: true))),
-                const SizedBox(width: 8),
-                Expanded(child: TextField(controller: p2Ctrl, decoration: const InputDecoration(labelText: '默认玩家2名', border: OutlineInputBorder(), isDense: true))),
-              ]),
-              const SizedBox(height: 8),
-              TextField(controller: dirCtrl, decoration: const InputDecoration(labelText: '导出目录（留空=剪贴板）', hintText: '/storage/emulated/0/Download', border: OutlineInputBorder(), isDense: true)),
-            ]),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-            FilledButton(onPressed: () async {
-              _settings.defaultLp = int.tryParse(lpCtrl.text) ?? 8000;
-              _settings.defaultP1Name = p1Ctrl.text.trim().isEmpty ? '依' : p1Ctrl.text.trim();
-              _settings.defaultP2Name = p2Ctrl.text.trim().isEmpty ? '尔' : p2Ctrl.text.trim();
-              _settings.exportDir = dirCtrl.text.trim();
-              await GameStorage.saveSettings(_settings);
-              if (mounted) { Navigator.pop(ctx); setState(() {}); }
-            }, child: const Text('保存')),
-          ],
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => SettingsPage(
+          settings: _settings,
+          onSaved: (s) => setState(() => _settings = s),
         ),
       ),
     );
@@ -538,9 +511,10 @@ class _MainScreenState extends State<MainScreen> {
             ),
             const Divider(),
             Expanded(
-              child: _games.isEmpty
-                  ? const Center(child: Text('暂无对局', style: TextStyle(color: Colors.grey)))
-                  : ListView.builder(
+              child: ClipRect(
+                child: _games.isEmpty
+                    ? const Center(child: Text('暂无对局', style: TextStyle(color: Colors.grey)))
+                    : ListView.builder(
                       itemCount: _games.length,
                       itemBuilder: (context, index) {
                         final game = _games[index];
@@ -565,6 +539,7 @@ class _MainScreenState extends State<MainScreen> {
                         );
                       },
                     ),
+              ),
             ),
             const Divider(),
             ListTile(
