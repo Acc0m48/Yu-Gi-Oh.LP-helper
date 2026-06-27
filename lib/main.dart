@@ -583,7 +583,7 @@ class _MainScreenState extends State<MainScreen> {
                   Text.rich(
                     TextSpan(
                       children: [
-                        const TextSpan(text: 'LP助手 v1.0.1\n', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                        const TextSpan(text: 'LP助手 v1.0.2\n', style: TextStyle(fontSize: 11, color: Colors.grey)),
                         const TextSpan(text: '游戏王桌游辅助工具\n', style: TextStyle(fontSize: 11, color: Colors.grey)),
                         const TextSpan(text: 'Flutter 3.32 · Dart 3.8\n', style: TextStyle(fontSize: 11, color: Colors.grey)),
                         TextSpan(text: '\n', style: TextStyle(fontSize: 4)),
