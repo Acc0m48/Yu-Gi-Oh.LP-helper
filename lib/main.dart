@@ -99,6 +99,7 @@ class _MainScreenState extends State<MainScreen> {
         builder: (_) => SettingsPage(
           settings: _settings,
           onSaved: (s) => setState(() => _settings = s),
+          onThemeChanged: (i) => LpApp.of(context)?.setThemeIndex(i),
         ),
       ),
     );

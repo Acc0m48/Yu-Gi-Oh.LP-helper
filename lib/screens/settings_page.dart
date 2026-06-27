@@ -5,8 +5,9 @@ import '../theme.dart';
 class SettingsPage extends StatefulWidget {
   final AppSettings settings;
   final ValueChanged<AppSettings> onSaved;
+  final ValueChanged<int> onThemeChanged;
 
-  const SettingsPage({super.key, required this.settings, required this.onSaved});
+  const SettingsPage({super.key, required this.settings, required this.onSaved, required this.onThemeChanged});
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -45,6 +46,7 @@ class _SettingsPageState extends State<SettingsPage> {
     widget.settings.exportDir = _dirCtrl.text.trim();
     widget.settings.themeIndex = _themeIndex;
     await GameStorage.saveSettings(widget.settings);
+    widget.onThemeChanged(_themeIndex);
     widget.onSaved(widget.settings);
     if (mounted) Navigator.pop(context);
   }
