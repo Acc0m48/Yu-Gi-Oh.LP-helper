@@ -8,12 +8,14 @@ class AppSettings {
   String defaultP1Name;
   String defaultP2Name;
   String exportDir;
+  int themeIndex;
 
   AppSettings({
     this.defaultLp = 8000,
     this.defaultP1Name = '依',
     this.defaultP2Name = '尔',
     this.exportDir = '',
+    this.themeIndex = 0,
   });
 
   Map<String, dynamic> toJson() => {
@@ -21,6 +23,7 @@ class AppSettings {
     'defaultP1Name': defaultP1Name,
     'defaultP2Name': defaultP2Name,
     'exportDir': exportDir,
+    'themeIndex': themeIndex,
   };
 
   factory AppSettings.fromJson(Map<String, dynamic> json) => AppSettings(
@@ -28,6 +31,7 @@ class AppSettings {
     defaultP1Name: json['defaultP1Name'] as String? ?? '依',
     defaultP2Name: json['defaultP2Name'] as String? ?? '尔',
     exportDir: json['exportDir'] as String? ?? '',
+    themeIndex: json['themeIndex'] as int? ?? 0,
   );
 }
 

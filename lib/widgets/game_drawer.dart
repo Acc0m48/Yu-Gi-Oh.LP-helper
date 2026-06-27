@@ -10,7 +10,6 @@ class GameDrawer extends StatelessWidget {
   final VoidCallback onExportData;
   final VoidCallback onImportData;
   final VoidCallback onOpenSettings;
-  final VoidCallback onToggleTheme;
 
   const GameDrawer({
     super.key,
@@ -22,7 +21,6 @@ class GameDrawer extends StatelessWidget {
     required this.onExportData,
     required this.onImportData,
     required this.onOpenSettings,
-    required this.onToggleTheme,
   });
 
   @override
@@ -109,12 +107,6 @@ class GameDrawer extends StatelessWidget {
               leading: const Icon(Icons.settings_outlined),
               title: const Text('设置'),
               onTap: () { Navigator.pop(context); onOpenSettings(); },
-            ),
-            SwitchListTile(
-              secondary: const Icon(Icons.dark_mode),
-              title: const Text('深色主题', style: TextStyle(fontSize: 14)),
-              value: Theme.of(context).brightness == Brightness.dark,
-              onChanged: (_) => onToggleTheme(),
             ),
             const Divider(),
             Padding(

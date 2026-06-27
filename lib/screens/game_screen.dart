@@ -5,7 +5,6 @@ import '../models/player.dart';
 import '../models/game.dart';
 import '../models/turn_record.dart';
 import '../widgets/numeric_keypad.dart';
-import '../theme.dart';
 
 const _phases = ['抽卡阶段', '准备阶段', '主要阶段1', '战斗阶段', '主要阶段2', '结束阶段'];
 const _quick500 = 500;
@@ -419,29 +418,28 @@ class _GameScreenState extends State<GameScreen> {
   Widget _buildTurnBar(Player cp) {
     final otherPi = 1 - widget.currentPlayerIndex;
     final otherName = widget.players[otherPi].name;
+    final cs = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 4),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4), borderRadius: BorderRadius.circular(10)),
       child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-        _iconBtn(Icons.skip_previous, Colors.orange, _retreatTurn),
+        _iconBtn(Icons.remove, cs.secondary, _retreatTurn),
         const SizedBox(width: 12),
         Column(children: [
-          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3), decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(12)),
-            child: Text(cp.name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onPrimary))),
+          Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3), decoration: BoxDecoration(color: cs.primary, borderRadius: BorderRadius.circular(12)),
+            child: Text(cp.name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: cs.onPrimary))),
           const SizedBox(height: 4),
           Text('第${widget.turn}回合', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
         ]),
         const SizedBox(width: 12),
-        _iconBtn(Icons.skip_next, Colors.green, _advanceTurn),
+        _iconBtn(Icons.add, cs.primary, _advanceTurn),
         const SizedBox(width: 20),
         Column(children: [
-          Text('▶ $otherName', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5))),
+          Text('▶ $otherName', style: TextStyle(fontSize: 12, color: cs.onSurface.withOpacity(0.5))),
           const SizedBox(height: 4),
-          Text('等待中', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3))),
+          Text('等待中', style: TextStyle(fontSize: 13, color: cs.onSurface.withOpacity(0.3))),
         ]),
-        const SizedBox(width: 8),
-        _iconBtn(Icons.refresh, Colors.red, () { widget.onTurnChanged(1); widget.onCurrentPlayerChanged(0); }),
       ]),
     );
   }
@@ -481,7 +479,7 @@ class _GameScreenState extends State<GameScreen> {
             ],
           ]),
           const SizedBox(height: 4),
-          Text('${player.lp}', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: player.lp > 0 ? AppColors.lpPositive : AppColors.lpNegative)),
+          Text('${player.lp}', style: TextStyle(fontSize: 34, fontWeight: FontWeight.bold, color: player.lp > 0 ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error)),
           Text('LP', style: TextStyle(fontSize: 11, color: cs.onSurface.withOpacity(0.3))),
         ]),
       ),
@@ -501,12 +499,12 @@ class _GameScreenState extends State<GameScreen> {
           final sign = r.lpDelta! >= 0 ? '+' : '';
           return Card(
             margin: const EdgeInsets.only(bottom: 4),
-            color: r.lpDelta! >= 0 ? AppColors.lpPositive.withOpacity(0.08) : AppColors.lpNegative.withOpacity(0.08),
+            color: r.lpDelta! >= 0 ? Theme.of(context).colorScheme.primary.withOpacity(0.08) : Theme.of(context).colorScheme.error.withOpacity(0.08),
             child: ListTile(
               dense: true, visualDensity: VisualDensity.compact,
               leading: CircleAvatar(
                 radius: 14,
-                backgroundColor: r.lpDelta! >= 0 ? AppColors.lpPositive : AppColors.lpNegative,
+                backgroundColor: r.lpDelta! >= 0 ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error,
                 child: Icon(r.lpDelta! >= 0 ? Icons.add : Icons.remove, size: 16, color: Colors.white),
               ),
               title: Text('${p.name}  $sign${r.lpDelta!.abs()}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
@@ -604,7 +602,7 @@ class _LpDialogState extends State<_LpDialog> {
         Expanded(child: _playerChip(0)), const SizedBox(width: 8), Expanded(child: _playerChip(1)),
       ])),
       Container(margin: const EdgeInsets.symmetric(horizontal: 24), padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)),
-        child: Row(children: [Text(_isAdd ? '+' : '-', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _isAdd ? AppColors.lpPositive : Colors.blue)), const Spacer(), Text(_buffer.isEmpty ? '0' : _buffer, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold))])),
+        child: Row(children: [Text(_isAdd ? '+' : '-', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _isAdd ? Theme.of(context).colorScheme.primary : Colors.blue)), const Spacer(), Text(_buffer.isEmpty ? '0' : _buffer, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold))])),
       const SizedBox(height: 4),
       Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
         _smallBtn('一半', Colors.orange, () { widget.onPayHalf(); Navigator.pop(context); }),
@@ -616,7 +614,7 @@ class _LpDialogState extends State<_LpDialog> {
     ])));
   }
   Widget _playerChip(int index) { final p = widget.players[index]; final sel = index == widget.playerIndex; final cs = Theme.of(context).colorScheme;
-    return GestureDetector(onTap: () => widget.onSelectPlayer(index), child: Container(padding: const EdgeInsets.symmetric(vertical: 8), decoration: BoxDecoration(color: sel ? cs.primaryContainer : cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(8), border: Border.all(color: sel ? cs.primary : cs.outline, width: sel ? 2 : 1)), child: Column(children: [Text(p.name, style: const TextStyle(fontSize: 13)), Text('${p.lp}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: p.lp > 0 ? AppColors.lpPositive : AppColors.lpNegative))]))); }
+    return GestureDetector(onTap: () => widget.onSelectPlayer(index), child: Container(padding: const EdgeInsets.symmetric(vertical: 8), decoration: BoxDecoration(color: sel ? cs.primaryContainer : cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(8), border: Border.all(color: sel ? cs.primary : cs.outline, width: sel ? 2 : 1)), child: Column(children: [Text(p.name, style: const TextStyle(fontSize: 13)), Text('${p.lp}', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: p.lp > 0 ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.error))]))); }
   Widget _smallBtn(String label, Color color, VoidCallback onTap) { return SizedBox(height: 28, child: ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: color, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 8), textStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)), onPressed: onTap, child: Text(label))); }
 }
 

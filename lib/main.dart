@@ -25,20 +25,29 @@ class LpApp extends StatefulWidget {
 
 class _LpAppState extends State<LpApp> {
   ThemeMode _themeMode = ThemeMode.system;
+  int _themeIndex = 0;
 
-  void toggleTheme() {
-    setState(() {
-      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-    });
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
   }
+
+  Future<void> _loadTheme() async {
+    final s = await GameStorage.loadSettings();
+    setState(() { _themeIndex = s.themeIndex; _themeMode = ThemeMode.system; });
+  }
+
+  void setThemeIndex(int i) => setState(() => _themeIndex = i);
 
   @override
   Widget build(BuildContext context) {
+    final p = presets[_themeIndex.clamp(0, presets.length - 1)];
     return MaterialApp(
       title: 'LP助手',
       debugShowCheckedModeBanner: false,
-      theme: buildLightTheme(),
-      darkTheme: buildDarkTheme(),
+      theme: buildPresetLight(p),
+      darkTheme: buildPresetDark(p),
       themeMode: _themeMode,
       home: const MainScreen(),
     );
@@ -322,7 +331,6 @@ class _MainScreenState extends State<MainScreen> {
         onExportData: _exportData,
         onImportData: _importData,
         onOpenSettings: _openSettings,
-        onToggleTheme: () => LpApp.of(context)?.toggleTheme(),
       ),
       body: game == null
           ? const Center(
