@@ -483,33 +483,42 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   Widget _buildDrawer() {
+    final cs = Theme.of(context).colorScheme;
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
-            DrawerHeader(
+            Material(
+              color: cs.surface,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('LP助手', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 4),
-                  Text(
-                    _currentGame?.name ?? '未选择对局',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                  DrawerHeader(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('LP助手', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text(
+                          _currentGame?.name ?? '未选择对局',
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+                        ),
+                      ],
+                    ),
                   ),
+                  ListTile(
+                    leading: const Icon(Icons.add_circle),
+                    title: const Text('新建对局'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      _createGame();
+                    },
+                  ),
+                  const Divider(),
                 ],
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.add_circle),
-              title: const Text('新建对局'),
-              onTap: () {
-                Navigator.pop(context);
-                _createGame();
-              },
-            ),
-            const Divider(),
             Expanded(
               child: _games.isEmpty
                   ? const Center(child: Text('暂无对局', style: TextStyle(color: Colors.grey)))
