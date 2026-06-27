@@ -55,6 +55,7 @@ Desktop.ini
 
 # === Dev docs ===
 DEVELOPMENT.md
+deepseek.md
 
 # === Misc ===
 *.log
